@@ -2121,7 +2121,7 @@ GameObject:
   - component: {fileID: 957885444}
   - component: {fileID: 957885445}
   m_Layer: 0
-  m_Name: Player 2
+  m_Name: Human Player
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2153,7 +2153,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 19c49b98ce38bec43acfadc2677ae88e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playingAs: 0
+  playingAs: 2
   isDoneMoving: 1
   piece: {fileID: 6382624621865550615, guid: f6a6c9b9973494f4e825a4cfa83c51f3, type: 3}
   lastValidity: 0
@@ -3856,7 +3856,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5724411723037034012, guid: 2959ef9f2d8702c418b25fb6fa597d40, type: 3}
       propertyPath: m_Name
-      value: Player 1
+      value: AI Player
       objectReference: {fileID: 0}
     - target: {fileID: 5773850953766962675, guid: 2959ef9f2d8702c418b25fb6fa597d40, type: 3}
       propertyPath: m_Materials.Array.data[0]

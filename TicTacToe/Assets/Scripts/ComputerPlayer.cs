@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using TTT;
 
+//Derivative of abstract player, handles computer users
 public class ComputerPlayer : AbstractPlayer
 {
     public int statesSampled = 0;
@@ -11,14 +12,18 @@ public class ComputerPlayer : AbstractPlayer
     //all free squares
     Queue<Vector2Int> moveChoices = new Queue<Vector2Int>();
 
+    //all choices that are good choices for the AI
     Queue<Vector2Int> viableChoices = new Queue<Vector2Int>();
 
+    //Determines how long a coroutine is allowed to take, so the game doesn't freeze while the AI is thinking
     public long millisecondsPerCycle = 17;
 
+    //Allows the option to disable the coroutine's time limit
     public bool NonBlocking = true;
 
     System.DateTime currentTime;
 
+    //Disable/Enable efficiency methods
     public bool AlphaBetaPrune = true;
     public bool SymmetryPrune = true;
 
@@ -37,6 +42,8 @@ public class ComputerPlayer : AbstractPlayer
 
         //Copy the board to avoid affecting the real one
         TTTBoard testBoard = new TTTBoard(board);
+
+        //Get all free squares - the player may cheat, but the AI does not
         testBoard.PopulateMoveQueue(moveChoices);
 
         //Error checking for if we try to edit a board that's complete
@@ -51,6 +58,7 @@ public class ComputerPlayer : AbstractPlayer
             chosenMove = Vector2Int.one * -1;
         }
 
+        //Allows us to check whether or not the following coroutine has finished, by saving a reference to a bool
         BoolCheck newBc = new BoolCheck();
         StartCoroutine(GetBestMovesRecursive(testBoard, playingAs, 0, anticipatedResult, newBc, 2));
 
@@ -60,6 +68,7 @@ public class ComputerPlayer : AbstractPlayer
             yield return new WaitForEndOfFrame();
         }
 
+        //Debug info
         Debug.Log("Computer player " + playingAs.ToString() + " processed " + statesSampled + " unique states, " +
             "best case scenario: " + anticipatedResult.outcome + " after " + anticipatedResult.depth + " turns");
 
@@ -92,17 +101,18 @@ public class ComputerPlayer : AbstractPlayer
     }
 
     //Takes in the board, the type of symbol (X, O) to simulate being placed, the level of recursion,
-    //A reference to the outcome to return, a check to say if it completed or was interrupted, and a previous best for AlphaBeta pruning
+    //  a reference to the outcome to return, a check to say if it completed or was interrupted, and a previous best for AlphaBeta pruning
     private IEnumerator GetBestMovesRecursive(TTTBoard board, SquareState toPlace, int functionDepth, MoveScore returnOutcome, BoolCheck bc, int previousBest)
     {
         statesSampled += 1;
         //Outcome determines if the end result is a win, loss or tie.
-        //I set it to be the state we expect to get overriden, with 1 meaning a win and -1 meaning a loss
+        //It gets set to be the state we expect to get overriden, with 1 meaning a win and -1 meaning a loss
         //Because we expect the AI to only make moves that improve its odds of winning, we initialize it to -2 if it's the AI's turn
         //That way, it will get overriden immediately
         //The opposite is true for if it's the player's turn
         int outcome = ((toPlace == playingAs) ? -2 : 2);
-        //How long before the end
+
+        //Estimate of how long before the end of the game
         int movesUntilEndgame = 0;
 
         //Used to determine if the rest of the loop is garbage, due to alpha-beta pruning
@@ -112,14 +122,18 @@ public class ComputerPlayer : AbstractPlayer
 
         for (int i = 0; i < moveChoices.Count; ++i)
         {
+            //For if alpha-beta determines all proceeding tests to be obsolete
             if (skipRestOfLoop)
             {
+                //cycles through the queue until it returns to its starting arrangement
                 moveChoices.Enqueue(moveChoices.Dequeue());
                 continue;
             }
+
             //Take a move from the queue to test
             Vector2Int testMove = moveChoices.Dequeue();
 
+            //Checks if the square is worth testing according to symmetry pruning - if it's not, skip the square and continue
             if (SymmetryPrune)
             {
                 if (board.board[testMove.x][testMove.y].CheckIfCulled())
@@ -130,6 +144,7 @@ public class ComputerPlayer : AbstractPlayer
                 }
             }
 
+            //Sets the square of the simulated board
             board.SetSquareState(testMove, toPlace);
 
             MoveScore moveScore = new MoveScore(0, 0);

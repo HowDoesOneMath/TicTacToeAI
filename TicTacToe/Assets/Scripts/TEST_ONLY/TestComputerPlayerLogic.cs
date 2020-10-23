@@ -8,7 +8,6 @@ public class TestComputerPlayerLogic : MonoBehaviour
     public ComputerPlayer cpu;
     bool printed = false;
 
-    // Start is called before the first frame update
     void Start()
     {
         TTT.TTTBoard aBoard = new TTT.TTTBoard(3, 3);

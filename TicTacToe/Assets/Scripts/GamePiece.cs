@@ -29,6 +29,7 @@ public class GamePiece : MonoBehaviour
         MainGame.pieces.Add(this);
     }
 
+    //Only if placed will it remove itself from the list
     private void OnDestroy()
     {
         if (placed)

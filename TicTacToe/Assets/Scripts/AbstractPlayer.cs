@@ -16,10 +16,12 @@ public abstract class AbstractPlayer : MonoBehaviour
     //chosen option
     protected Vector2Int chosenMove;
     public Vector2Int ChosenMove { get { return chosenMove; } }
+
     //Only used by computer, in order to display how it thinks the game will happen
     public MoveScore anticipatedResult;
 
     //Repeatedly called until the player moves
+    //Makes a function call to AI's logic algorithm in ComputerPlayer
     public abstract IEnumerator GetDecision(TTTBoard board);
 
     public virtual void ResetPlayer(SquareState playAs)

@@ -11,6 +11,8 @@ namespace TTT
     public class TTTBoard
     {
         public int boardLength { get; private set; }
+
+        //Amount of squares necessary for a win. For a 3x3 board, this should be initialized to 3
         public int amountForWin { get; private set; }
         public TTTSquare[][] board { get; private set; }
         public int availableMoves { get; private set; }
@@ -57,6 +59,7 @@ namespace TTT
                 randomPriorities.Add(i);
             }
 
+            //initializing an array of arrays
             for (int i = 0; i < boardLength; ++i)
             {
                 board[i] = new TTTSquare[boardLength];
@@ -64,6 +67,7 @@ namespace TTT
                 for (int j = 0; j < boardLength; ++j)
                 {
                     //Priorities are randomly given to allow for greater board diversity
+                    //Each priority is a unique number from 0-8
                     int priority = randomPriorities[Random.Range(0, randomPriorities.Count)];
                     board[i][j] = new TTTSquare(priority);
                     randomPriorities.Remove(priority);
@@ -115,6 +119,8 @@ namespace TTT
         //register all types of symmetries the board can have
         void SetSymmetries()
         {
+            symmetryTypes = new List<TTTBoardSymmetryCheck>();
+
             TTTBoardSymmetryCheck XaxisSymmetry = new TTTBoardSymmetryCheck();
             TTTBoardSymmetryCheck YaxisSymmetry = new TTTBoardSymmetryCheck();
             TTTBoardSymmetryCheck DiagonalBackSlashSymmetry = new TTTBoardSymmetryCheck();
@@ -122,9 +128,16 @@ namespace TTT
             TTTBoardSymmetryCheck QuarterRotationalSymmetry = new TTTBoardSymmetryCheck();
             TTTBoardSymmetryCheck HalfRotationalSymmetry = new TTTBoardSymmetryCheck();
 
+            symmetryTypes.Add(XaxisSymmetry);
+            symmetryTypes.Add(YaxisSymmetry);
+            symmetryTypes.Add(DiagonalBackSlashSymmetry);
+            symmetryTypes.Add(DiagonalForwardSlashSymmetry);
+            symmetryTypes.Add(QuarterRotationalSymmetry);
+            symmetryTypes.Add(HalfRotationalSymmetry);
+
             TTTIndividualSymmetry sym;
 
-            //All the extra set up is taken care of in the TTTIndividualSymmetry constructor, so we only have to worry about sets of squares here
+            //All the extra set up is taken care of in the TTTIndividualSymmetry constructor, so we only have to worry about whats sets of squares here are symmetrical
             for (int i = 0; i < boardLength; ++i)
             {
                 for (int j = 0; j < boardLength / 2; ++j)
@@ -168,14 +181,9 @@ namespace TTT
                 }
             }
 
-            for (int i = 0; i < boardLength; ++i)
+            for (int i = 0; i < (boardLength * boardLength) / 2; ++i)
             {
-                for (int j = 0; j < boardLength; ++j)
-                {
-                    if (i == boardLength - 1 - i && j == boardLength - 1 - j)
-                        continue;
-                    sym = new TTTIndividualSymmetry(new TTTSquare[] { board[i][j], board[boardLength - 1 - i][boardLength - 1 - j] }, HalfRotationalSymmetry);
-                }
+                sym = new TTTIndividualSymmetry(new TTTSquare[] { board[i / boardLength][i % boardLength], board[boardLength - 1 - i / boardLength][boardLength - 1 - i % boardLength] }, HalfRotationalSymmetry);
             }
         }
 
@@ -197,7 +205,7 @@ namespace TTT
             }
         }
 
-        //Sets a square of the board, but also sets additional information
+        //Sets a square of the board, also adjusting the available moves depending on what the square is set to
         public void SetSquareState(Vector2Int loc, SquareState state)
         {
             if (board[loc.x][loc.y].state == state)
@@ -205,15 +213,16 @@ namespace TTT
                 return;
             }
 
+            if (board[loc.x][loc.y].state == SquareState.Empty)
+            {
+                availableMoves -= 1;
+            }
+
             board[loc.x][loc.y].SetState(state);
 
             if (state == SquareState.Empty)
             {
                 availableMoves += 1;
-            }
-            else
-            {
-                availableMoves -= 1;
             }
         }
 
@@ -243,31 +252,32 @@ namespace TTT
         //These will be updated once a square has been set/reset
         public List<TTTWinCondition> affectedConditions { get; private set; }
 
-        public List<TTTIndividualSymmetry> pairSymmetries { get; private set; }
+        //Like win conditions, but for symmetries
+        public List<TTTIndividualSymmetry> symmetries { get; private set; }
 
         public SquareState state { get; private set; }
 
         //Priority is used to help find out which square should be chosen in the event of a symmetric board
         public int priority { get; private set; }
 
-        public int flaggedBit { get; private set; } = 0;
-
+        //for creating new instances
         public TTTSquare(int squarePriority)
         {
             state = SquareState.Empty;
             priority = squarePriority;
 
             affectedConditions = new List<TTTWinCondition>();
-            pairSymmetries = new List<TTTIndividualSymmetry>();
+            symmetries = new List<TTTIndividualSymmetry>();
         }
 
+        //for creating duplicates
         public TTTSquare(TTTSquare duplicateSquare)
         {
             state = duplicateSquare.state;
             priority = duplicateSquare.priority;
 
             affectedConditions = new List<TTTWinCondition>();
-            pairSymmetries = new List<TTTIndividualSymmetry>();
+            symmetries = new List<TTTIndividualSymmetry>();
         }
 
         //Upon setting the state, the affected win conditions and symmetries are updated
@@ -281,9 +291,9 @@ namespace TTT
 
             state = newState;
 
-            for (int i = 0; i < pairSymmetries.Count; ++i)
+            for (int i = 0; i < symmetries.Count; ++i)
             {
-                pairSymmetries[i].UpdateSymmetry();
+                symmetries[i].UpdateSymmetry();
             }
         }
 
@@ -291,9 +301,9 @@ namespace TTT
         //If so, return true only if this square has the highest priority of all its symmetrical squares
         public bool CheckIfCulled()
         {
-            for (int i = 0; i < pairSymmetries.Count; ++i)
+            for (int i = 0; i < symmetries.Count; ++i)
             {
-                if (pairSymmetries[i].mainOwner.isSymmetric && pairSymmetries[i].symmetryPriority > priority)
+                if (symmetries[i].mainOwner.isSymmetric && symmetries[i].symmetryPriority > priority)
                 {
                     return true;
                 }
@@ -313,7 +323,7 @@ namespace TTT
 
     //A group of symmetrical squares
     //Symmetries are stored using bitwise operations for efficiency
-    //If all bits in bitwiseSymmetryCheck are 0, then the board is symmetrical
+    //If all bits in bitwiseSymmetryCheck are 0, then the board is symmetrical as defined by the object of this class
     public class TTTBoardSymmetryCheck
     {
         public TTTBoardSymmetryCheck()
@@ -321,6 +331,8 @@ namespace TTT
             checks = new Dictionary<TTTIndividualSymmetry, int>();
         }
 
+        //Bitwise integer. This limits the maximum amount of checks to 32, which comfortable fits a board with only 9 squares
+        //Much more efficient than a list of booleans
         public int bitwiseSymmetryCheck { get; private set; } = 0;
 
         public bool isSymmetric { get; private set; } = false;
@@ -347,6 +359,12 @@ namespace TTT
 
     //Individual symmetry class
     //Checks a small array of squares to see if they're all equal
+    //This is owned by a larger TTTBoardSymmetryCheck, which takes the results of all the smaller ones and judges the symmetry of a board
+    // 1 2 3
+    // 4 5 6
+    // 7 8 9
+    //For example, a TTTBoardSymmetryCheck that determines X axis symmetry would take in 3 TTTIndividualSymmetry, which have references 
+    //  to pairs of squares (1, 7), (2, 8), (3, 9) respectively in the above board
     public class TTTIndividualSymmetry
     {
         public bool isSymmetric { get; protected set; } = false;
@@ -364,7 +382,7 @@ namespace TTT
 
             for (int i = 0; i < squares.Length; ++i)
             {
-                squares[i].pairSymmetries.Add(this);
+                squares[i].symmetries.Add(this);
                 if (symmetryPriority < squares[i].priority)
                     symmetryPriority = squares[i].priority;
             }
@@ -374,6 +392,7 @@ namespace TTT
         }
 
         //Repeatedly tests all elements of the array for symmetry
+        //Usually these are pairs meaning a single check, but the Quarter rotation is an exception that needs 4 elements
         public void UpdateSymmetry()
         {
             for (int i = 0; i < squares.Length - 1; ++i)

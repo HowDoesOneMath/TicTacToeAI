@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+//A square that acts as a visual representation of a markable area on a tic tac toe board
 [RequireComponent(typeof(MeshRenderer))]
 public class ClickableSquare : MonoBehaviour
 {
@@ -46,27 +47,32 @@ public class ClickableSquare : MonoBehaviour
 
         //Determines legality of move.
         //Ordinarily you'd deny the player to move illegally, but I found it more fun to let it happen
-        //The game halts if you attempt an illegal move
+        //The game halts if you attempt an illegal move, and the AI throws a table
         bool legal = (selectedSquare.state == TTT.SquareState.Empty);
 
+        //Uses the clickable square's number to find its location on the abstract game board, and set its state to X or O
         MainGame.gameBoard.SetSquareState(new Vector2Int(MySquareNumber / bSize, MySquareNumber % bSize), ap.playingAs);
 
-        //Instantiate piece on the board square you click on
+        //Instantiate piece on the board square you click on. y value adjusts according to if a piece already exists, to avoid Z fighting.
+        //Pieces are offset slightly on the X and Z axes, to add better feel to the game
         GamePiece newPiece = Instantiate(ap.piece, transform.position + new Vector3(Random.Range(-moveSpread, moveSpread), myPieces.Count * 0.03f, Random.Range(-moveSpread, moveSpread)), transform.rotation);
         FlippableSymbol flippable = newPiece.GetComponent<FlippableSymbol>();
         newPiece.SetPlaced();
+        
+        //Set the flippable object as 'placed' on the board, so it can be flipped later
         if (flippable != null)
             flippable.placed = true;
 
         myPieces.Add(newPiece);
 
-        //check legality
+        //inform player of legality
         if (legal)
             ap.lastValidity = MoveValidity.LEGAL;
         else
             ap.lastValidity = MoveValidity.SQUARE_ALREADY_OCCUPIED;
     }
 
+    //Clear the registered pieces list
     public void DumpPieces()
     {
         myPieces.Clear();
