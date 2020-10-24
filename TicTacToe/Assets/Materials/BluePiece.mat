@@ -82,7 +82,7 @@ Material:
     - _Surface: 0
     - _WorkflowMode: 1
     - _ZWrite: 1
-    - isX: 1
+    - isX: 0
     m_Colors:
     - BaseColor: {r: 0, g: 0.08366006, b: 0.5019608, a: 0}
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
